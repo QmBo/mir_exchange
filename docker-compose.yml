@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  db_mir_exchange:
+    image: mongo
+    container_name: db_mir_exchange
+    volumes:
+      - /docker/volums/mir-exchange/db/data:/data/db
+    ports:
+      - "27017:27017"
+    restart: always
+  mir_exchange:
+    image: qmbo/mir-exchange
+    container_name: mir_exchange
+    spring:
+      kafka:
+        bootstrap-servers: main_kafka:49150
+      data:
+        mongodb:
+          host: db_mir_exchang
+          port: 27017
+          database: mirexchange
+    ports:
+      - "8080:49001"
+    depends_on:
+      - db_mir_exchange
+    restart: always

@@ -7,6 +7,13 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
 
+/**
+ * Rate
+ *
+ * @author Victor Egorov (qrioflat@gmail.com).
+ * @version 0.1
+ * @since 08.12.2022
+ */
 @Accessors(chain = true)
 @Data
 @Document

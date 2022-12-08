@@ -1,59 +1,100 @@
 package ru.qmbo.mirexchange.service;
 
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ru.qmbo.mirexchange.model.Rate;
 import ru.qmbo.mirexchange.repository.RateRepository;
 
-import java.util.List;
 import java.util.Optional;
 
 import static java.lang.Math.abs;
 import static java.lang.String.format;
 
+/**
+ * RateService
+ *
+ * @author Victor Egorov (qrioflat@gmail.com).
+ * @version 0.1
+ * @since 08.12.2022
+ */
 @Service
 @Log4j2
 public class RateService {
+    private final String topic;
     private final RateRepository repository;
     private final KafkaService kafkaService;
 
-    public RateService(RateRepository repository, KafkaService kafkaService) {
+    /**
+     * Instantiates a new Rate service.
+     *
+     * @param topic        the topic
+     * @param repository   the repository
+     * @param kafkaService the kafka service
+     */
+    public RateService(@Value("${kafka.topic}")String topic, RateRepository repository, KafkaService kafkaService) {
+        this.topic = topic;
         this.repository = repository;
         this.kafkaService = kafkaService;
     }
 
-    public void newRate(Rate tenge) {
+    /**
+     * New rate.
+     *
+     * @param newRate the new rate
+     */
+    public void newRate(Rate newRate) {
         Optional<Rate> lastRecord = this.repository.findTop1ByOrderByDateDesc();
         if (lastRecord.isPresent()) {
             boolean rec = false;
-            Rate rate = lastRecord.get();
-            if (rate.getAmount().compareTo(tenge.getAmount()) != 0) {
+            Rate lastRate = lastRecord.get();
+            if (lastRate.getAmount().compareTo(newRate.getAmount()) != 0) {
                 rec = true;
             }
             if (rec) {
-                log.info("Exchange rate chang. New rate = {}", tenge.getAmount());
-                this.repository.save(tenge);
-                this.rateChanged();
+                log.info("Exchange rate chang. New rate = {}", newRate.getAmount());
+                this.repository.save(newRate);
+                this.rateChanged(newRate, lastRate);
             }
+        } else {
+            log.info("No exchange rate in data base. New rate = {}", newRate.getAmount());
+            this.repository.save(newRate);
+            this.firstRateRecord(newRate);
         }
     }
 
-    private void rateChanged() {
-        List<Rate> lastRates = this.repository.findTop2ByOrderByDateDesc();
-        if (lastRates.size() == 2) {
-            Float actual = lastRates.get(0).getAmount();
-            float div = actual - lastRates.get(1).getAmount();
-            float abs = abs(div);
-            String firstString = (div < 0.0)
-                    ? format("%s %.5f", "Рубль дорожает разница:", abs)
-                    : format("%s %.5f", "Рубль дешевеет разница:", abs);
-            double rubRate = 1 / actual;
-            String secondString = String.format("За рубль сейчас дают %.4f тенге.", rubRate);
-            String message = format("%s\n%s", firstString, secondString);
-            log.info(firstString);
-            log.info(secondString);
-            this.kafkaService.sendMessage(message);
-        }
+    private void firstRateRecord(Rate rate) {
+        float rub = 1 / rate.getAmount();
+        String message =
+                format("Курс на сегодня: %.4f\nСтатистики курса нет, так ка нет более ранней информации о курсе.", rub);
+        log.info(message);
+        this.kafkaService.sendMessage(this.topic, message);
     }
 
+    private void rateChanged(Rate newRate, Rate lastRate) {
+        Float actual = newRate.getAmount();
+        float div = actual - lastRate.getAmount();
+        float abs = abs(div);
+        String firstString = (div < 0.0)
+                ? format("%s %.5f", "Рубль дорожает разница:", abs)
+                : format("%s %.5f", "Рубль дешевеет разница:", abs);
+        double rubRate = 1 / actual;
+        String secondString = String.format("За рубль сейчас дают %.4f тенге.", rubRate);
+        String message = format("%s\n%s", firstString, secondString);
+        log.info(firstString);
+        log.info(secondString);
+        this.kafkaService.sendMessage(this.topic, message);
+    }
+
+    /**
+     * Gets last rate.
+     *
+     * @return the last rate
+     */
+    public String getLastRate() {
+        Float amount = this.repository.findTop1ByOrderByDateDesc().orElse(new Rate().setAmount(0F)).getAmount();
+        return String.format(
+                "Last amount = %f %s", amount, amount == 0F ? "" : format("=> Now 1 Rub = %.4f Ten.", (1 / amount))
+        );
+    }
 }

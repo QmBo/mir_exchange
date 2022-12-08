@@ -12,6 +12,13 @@ import ru.qmbo.mirexchange.model.Rate;
 import java.io.IOException;
 import java.util.Date;
 
+/**
+ * ParserService
+ *
+ * @author Victor Egorov (qrioflat@gmail.com).
+ * @version 0.1
+ * @since 08.12.2022
+ */
 @Service
 @Log4j2
 public class ParserService {
@@ -20,10 +27,18 @@ public class ParserService {
 
     private final RateService rateService;
 
+    /**
+     * Instantiates a new Parser service.
+     *
+     * @param rateService the rate service
+     */
     public ParserService(RateService rateService) {
         this.rateService = rateService;
     }
 
+    /**
+     * Gets page.
+     */
     @Scheduled(cron = "0 * * * * ?")
     public void getPage() {
         try {

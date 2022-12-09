@@ -3,6 +3,7 @@ package ru.qmbo.mirexchange.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import ru.qmbo.mirexchange.dto.Message;
 
 /**
  * KafkaService
@@ -13,18 +14,18 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class KafkaService {
-    private final String prefix;
-    private final KafkaTemplate<Integer, String> template;
+    private final String chatId;
+    private final KafkaTemplate<Integer, Message> template;
 
     /**
      * Instantiates a new Kafka service.
      *
-     * @param prefix   the prefix
+     * @param chatId   the chatId
      * @param template the template
      */
-    public KafkaService(@Value("${telegram.chat-id}") String prefix,
-                        KafkaTemplate<Integer, String> template) {
-        this.prefix = prefix;
+    public KafkaService(@Value("${telegram.chat-id}") String chatId,
+                        KafkaTemplate<Integer, Message> template) {
+        this.chatId = chatId;
         this.template = template;
     }
 
@@ -35,6 +36,6 @@ public class KafkaService {
      * @param message the message
      */
     public void sendMessage(String topic, String message) {
-        this.template.send(topic, String.format("%s_%s", prefix, message));
+        this.template.send(topic, new Message().setMessage(message).setChatId(Long.parseLong(this.chatId)));
     }
 }

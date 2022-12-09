@@ -39,7 +39,8 @@ public class ParserService {
     /**
      * Gets page.
      */
-    @Scheduled(cron = "0 * * * * ?")
+//    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(fixedDelay = 60000)
     public void getPage() {
         try {
             this.parsPage(Jsoup.connect(this.page).get());

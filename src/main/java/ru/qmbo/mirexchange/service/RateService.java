@@ -66,7 +66,7 @@ public class RateService {
     private void firstRateRecord(Rate rate) {
         float rub = 1 / rate.getAmount();
         String message =
-                format("Курс на сегодня: %.4f\nСтатистики курса нет, так ка нет более ранней информации о курсе.", rub);
+                format("Курс на сегодня: %.4f\nСтатистики курса нет, так как нет более ранней информации о курсе.", rub);
         log.info(message);
         this.kafkaService.sendMessage(this.topic, message);
     }

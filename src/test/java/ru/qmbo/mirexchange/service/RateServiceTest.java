@@ -34,7 +34,7 @@ class RateServiceTest {
     @Test
     public void whenNewRateThenWrite() {
         when(repository.findTop1ByOrderByDateDesc()).thenReturn(Optional.empty());
-        rateService.newRate(new Rate().setAmount(0.1356F).setName("Каз тен").setDate(new Date()));
+        rateService.newRate(new Rate().setAmount((float) 0.1356).setName("Каз тен").setDate(new Date()));
         verify(repository).save(rateArgumentCaptor.capture());
         assertThat(rateArgumentCaptor.getAllValues().size()).isEqualTo(1);
         assertThat(rateArgumentCaptor.getValue().getAmount()).isEqualTo(0.1356F);
@@ -47,7 +47,7 @@ class RateServiceTest {
         rateService.newRate(new Rate().setAmount(0.1356F).setName("Каз тен").setDate(new Date()));
         verify(kafkaService).sendMessage(anyString(), stringArgumentCaptor.capture());
         assertThat(stringArgumentCaptor.getValue())
-                .isEqualTo("Курс на сегодня: 7,3746\nСтатистики курса нет, так ка нет более ранней информации о курсе.");
+                .isEqualTo("Курс на сегодня: 7,3746\nСтатистики курса нет, так как нет более ранней информации о курсе.\n1000 тен. = 136 руб.\n2000 тен. = 271 руб.\n3000 тен. = 407 руб.\n4000 тен. = 542 руб.\n5000 тен. = 678 руб.\n6000 тен. = 814 руб.\n7000 тен. = 949 руб.\n8000 тен. = 1085 руб.\n9000 тен. = 1220 руб.");
     }
 
     @Test
@@ -60,7 +60,7 @@ class RateServiceTest {
         assertThat(rateArgumentCaptor.getValue().getAmount()).isEqualTo(0.1356F);
         assertThat(rateArgumentCaptor.getValue().getName()).isEqualTo("Каз тен");
         assertThat(stringArgumentCaptor.getValue())
-                .isEqualTo("Рубль дешевеет разница: 0,00110\nЗа рубль сейчас дают 7,3746 тенге.");
+                .isEqualTo("Рубль дешевеет разница: 0,00110\nЗа рубль сейчас дают 7,3746 тенге.\n1000 тен. = 136 руб.\n2000 тен. = 271 руб.\n3000 тен. = 407 руб.\n4000 тен. = 542 руб.\n5000 тен. = 678 руб.\n6000 тен. = 814 руб.\n7000 тен. = 949 руб.\n8000 тен. = 1085 руб.\n9000 тен. = 1220 руб.");
     }
 
     @Test
@@ -73,6 +73,6 @@ class RateServiceTest {
         assertThat(rateArgumentCaptor.getValue().getAmount()).isEqualTo(0.1356F);
         assertThat(rateArgumentCaptor.getValue().getName()).isEqualTo("Каз тен");
         assertThat(stringArgumentCaptor.getValue())
-                .isEqualTo("Рубль дорожает разница: 0,00090\nЗа рубль сейчас дают 7,3746 тенге.");
+                .isEqualTo("Рубль дорожает разница: 0,00090\nЗа рубль сейчас дают 7,3746 тенге.\n1000 тен. = 136 руб.\n2000 тен. = 271 руб.\n3000 тен. = 407 руб.\n4000 тен. = 542 руб.\n5000 тен. = 678 руб.\n6000 тен. = 814 руб.\n7000 тен. = 949 руб.\n8000 тен. = 1085 руб.\n9000 тен. = 1220 руб.");
     }
 }

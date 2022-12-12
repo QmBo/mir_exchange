@@ -14,18 +14,14 @@ import ru.qmbo.mirexchange.dto.Message;
  */
 @Service
 public class KafkaService {
-    private final String chatId;
     private final KafkaTemplate<Integer, Message> template;
 
     /**
      * Instantiates a new Kafka service.
      *
-     * @param chatId   the chatId
      * @param template the template
      */
-    public KafkaService(@Value("${telegram.chat-id}") String chatId,
-                        KafkaTemplate<Integer, Message> template) {
-        this.chatId = chatId;
+    public KafkaService(KafkaTemplate<Integer, Message> template) {
         this.template = template;
     }
 
@@ -35,7 +31,7 @@ public class KafkaService {
      * @param topic   the topic
      * @param message the message
      */
-    public void sendMessage(String topic, String message) {
-        this.template.send(topic, new Message().setMessage(message).setChatId(Long.parseLong(this.chatId)));
+    public void sendMessage(String topic, Message message) {
+        this.template.send(topic, message);
     }
 }

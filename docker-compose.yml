@@ -11,9 +11,13 @@ services:
     ports:
       - "27017:27017"
     restart: always
+    networks:
+      telegram_messages_sender_net:
+        ipv4_address: 172.28.0.29
+
 
   mir_exchange:
-    image: qmbo/mir_exchange:0.0.1
+    image: qmbo/mir_exchange:0.0.3
     container_name: mir_exchange
     environment:
       SPRING_KAFKA_BOOTSTRAP-SERVERS: telegram_messages_sender_broker:49150
@@ -23,6 +27,9 @@ services:
     depends_on:
       - db_mir_exchange
     restart: always
+    networks:
+      telegram_messages_sender_net:
+        ipv4_address: 172.28.0.30
 
 #  mongo-express:
 #    image: mongo-express
@@ -35,6 +42,6 @@ services:
 #      ME_CONFIG_MONGODB_URL: mongodb://root:password@db_mir_exchange:27017/
 
 networks:
-  default:
+  telegram_messages_sender_net:
     external:
       name: telegram_messages_sender_net

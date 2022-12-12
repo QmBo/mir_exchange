@@ -3,6 +3,7 @@ package ru.qmbo.mirexchange.service;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import ru.qmbo.mirexchange.dto.Message;
 import ru.qmbo.mirexchange.model.Rate;
 import ru.qmbo.mirexchange.repository.RateRepository;
 
@@ -22,6 +23,7 @@ import static java.lang.String.format;
 @Log4j2
 public class RateService {
     private final String topic;
+    private final String chatId;
     private final RateRepository repository;
     private final KafkaService kafkaService;
 
@@ -32,8 +34,11 @@ public class RateService {
      * @param repository   the repository
      * @param kafkaService the kafka service
      */
-    public RateService(@Value("${kafka.topic}")String topic, RateRepository repository, KafkaService kafkaService) {
+    public RateService(@Value("${kafka.topic}")String topic,
+                       @Value("${telegram.chat-id}") String chatId,
+                       RateRepository repository, KafkaService kafkaService) {
         this.topic = topic;
+        this.chatId = chatId;
         this.repository = repository;
         this.kafkaService = kafkaService;
     }
@@ -69,7 +74,9 @@ public class RateService {
                 format("Курс на сегодня: %.4f\nСтатистики курса нет, так как нет более ранней информации о курсе.", rub);
         message = this.addUsuallyToMessage(message, rub);
         log.info(message);
-        this.kafkaService.sendMessage(this.topic, message);
+        this.kafkaService.sendMessage(
+                this.topic, new Message().setMessage(message).setChatId(Long.parseLong(this.chatId))
+        );
     }
 
     private void rateChanged(Rate newRate, Rate lastRate) {
@@ -84,7 +91,9 @@ public class RateService {
         String message = format("%s\n%s", firstString, secondString);
         message = this.addUsuallyToMessage(message, rubRate);
         log.info(message);
-        this.kafkaService.sendMessage(this.topic, message);
+        this.kafkaService.sendMessage(
+                this.topic, new Message().setMessage(message).setChatId(Long.parseLong(this.chatId))
+        );
     }
 
     private String addUsuallyToMessage(String message, double rubRate) {
@@ -111,5 +120,26 @@ public class RateService {
         return String.format(
                 "Last amount = %f %s", amount, amount == 0F ? "" : format("=> Now 1 Rub = %.4f Ten.", (1 / amount))
         );
+    }
+
+	public String calculateRate(String chatId, String amount) {
+        String[] result = {"Wrong Parameters"};
+        try {
+            int parseAmount = Integer.parseInt(amount);
+            long parseChatId = Long.parseLong(chatId);
+            this.repository.findTop1ByOrderByDateDesc()
+                .ifPresent(
+                        rate -> result[0] = this.sendCalculateMessage(parseChatId, parseAmount, parseAmount * rate.getAmount()))
+            ;
+        } catch (Exception e) {
+            log.warn("Parse input value error: {}", e.getMessage());
+        }
+        return result[0];
+	}
+
+    private String sendCalculateMessage(long chatId, int requestInt, float calculateRate) {
+        String message = format("Сегодня %s тен. = %.2f руб.", requestInt, calculateRate);
+        this.kafkaService.sendMessage(this.topic, new Message().setMessage(message).setChatId(chatId));
+        return message;
     }
 }

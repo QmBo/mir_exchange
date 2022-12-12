@@ -31,6 +31,7 @@ public class RateService {
      * Instantiates a new Rate service.
      *
      * @param topic        the topic
+     * @param chatId       the chat id
      * @param repository   the repository
      * @param kafkaService the kafka service
      */
@@ -122,7 +123,14 @@ public class RateService {
         );
     }
 
-	public String calculateRate(String chatId, String amount) {
+    /**
+     * Calculate exchange rate.
+     *
+     * @param chatId the chat id
+     * @param amount the amount
+     * @return the string
+     */
+    public String calculateRate(String chatId, String amount) {
         String[] result = {"Wrong Parameters"};
         try {
             int parseAmount = Integer.parseInt(amount);
@@ -138,7 +146,7 @@ public class RateService {
 	}
 
     private String sendCalculateMessage(long chatId, int requestInt, float calculateRate) {
-        String message = format("Сегодня %s тен. = %.2f руб.", requestInt, calculateRate);
+        String message = format("Сегодня %,d тен. = %,.2f руб.", requestInt, calculateRate);
         this.kafkaService.sendMessage(this.topic, new Message().setMessage(message).setChatId(chatId));
         return message;
     }

@@ -83,6 +83,6 @@ class RateServiceTest {
         String result = rateService.calculateRate("123456", "1000");
         verify(kafkaService).sendMessage(anyString(), messageArgumentCaptor.capture());
         assertThat(messageArgumentCaptor.getValue().getChatId()).isEqualTo(123456L);
-        assertThat(result).isEqualTo("Сегодня 1000 тен. = 136,50 руб.");
+        assertThat(result).isEqualTo("Сегодня 1 000 тен. = 136,50 руб.");
     }
 }

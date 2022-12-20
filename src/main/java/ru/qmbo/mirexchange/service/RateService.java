@@ -23,25 +23,24 @@ import static java.lang.String.format;
 @Log4j2
 public class RateService {
     private final String topic;
-    private final String chatId;
     private final RateRepository repository;
     private final KafkaService kafkaService;
+    private final UserService userService;
 
     /**
      * Instantiates a new Rate service.
      *
      * @param topic        the topic
-     * @param chatId       the chat id
      * @param repository   the repository
      * @param kafkaService the kafka service
+     * @param userService  the user service
      */
     public RateService(@Value("${kafka.topic}")String topic,
-                       @Value("${telegram.chat-id}") String chatId,
-                       RateRepository repository, KafkaService kafkaService) {
+                       RateRepository repository, KafkaService kafkaService, UserService userService) {
         this.topic = topic;
-        this.chatId = chatId;
         this.repository = repository;
         this.kafkaService = kafkaService;
+        this.userService = userService;
     }
 
     /**
@@ -75,8 +74,9 @@ public class RateService {
                 format("Курс на сегодня: %.4f\nСтатистики курса нет, так как нет более ранней информации о курсе.", rub);
         message = this.addUsuallyToMessage(message, rub);
         log.info(message);
-        this.kafkaService.sendMessage(
-                this.topic, new Message().setMessage(message).setChatId(Long.parseLong(this.chatId))
+        String finalMessage = message;
+        this.userService.findAllUsers().forEach(
+                user -> sendMessage(new Message().setMessage(finalMessage), user.getChatId())
         );
     }
 
@@ -92,9 +92,15 @@ public class RateService {
         String message = format("%s\n%s", firstString, secondString);
         message = this.addUsuallyToMessage(message, rubRate);
         log.info(message);
-        this.kafkaService.sendMessage(
-                this.topic, new Message().setMessage(message).setChatId(Long.parseLong(this.chatId))
+        String finalMessage = message;
+        this.userService.findAllUsers().forEach(
+                user -> sendMessage(new Message().setMessage(finalMessage), user.getChatId())
         );
+    }
+
+    private void sendMessage(Message setMessage, Long user) {
+        this.kafkaService.sendMessage(
+                this.topic, setMessage.setChatId(user));
     }
 
     private String addUsuallyToMessage(String message, double rubRate) {
@@ -149,5 +155,15 @@ public class RateService {
         String message = format("Сегодня %,d тен. = %,.2f руб.", requestInt, calculateRate);
         this.kafkaService.sendMessage(this.topic, new Message().setMessage(message).setChatId(chatId));
         return message;
+    }
+
+    /**
+     * Resend message.
+     *
+     * @return answer message
+     */
+    public String resend() {
+        this.repository.findTop1ByOrderByDateDesc().ifPresent(this::firstRateRecord);
+        return "try to resend";
     }
 }

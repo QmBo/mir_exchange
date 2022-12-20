@@ -42,4 +42,10 @@ public class RateController {
     public String calculateRate(@RequestParam String amount, @RequestParam String chatId) {
         return this.rateService.calculateRate(chatId, amount);
     }
+
+    @GetMapping("/resend")
+    @ResponseBody
+    public String resend() {
+        return this.rateService.resend();
+    }
 }

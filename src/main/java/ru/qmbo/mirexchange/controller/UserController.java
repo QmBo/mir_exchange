@@ -21,4 +21,10 @@ public class UserController {
     public String addUser(@RequestParam String chatId) {
         return this.userService.addUser(chatId);
     }
+
+    @GetMapping("/dell")
+    @ResponseBody
+    public String dellUser(@RequestParam String chatId) {
+        return this.userService.dellUser(chatId);
+    }
 }

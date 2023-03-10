@@ -6,27 +6,49 @@ import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.MongoDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 import ru.qmbo.mirexchange.dto.Message;
 import ru.qmbo.mirexchange.model.Rate;
+import ru.qmbo.mirexchange.model.User;
 import ru.qmbo.mirexchange.repository.RateRepository;
+import ru.qmbo.mirexchange.repository.UserRepository;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
+@Testcontainers
 class RateServiceTest {
+
+    @Container
+    public static MongoDBContainer mongoDB = new MongoDBContainer(
+            DockerImageName.parse("mongo:4.0.10"));
+
+
+    @DynamicPropertySource
+    public static void properties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.mongodb.uri", mongoDB::getReplicaSetUrl);
+    }
+
     @Autowired
     private RateService rateService;
     @MockBean
     private KafkaService kafkaService;
     @MockBean
-    private RateRepository repository;
+    private RateRepository rateRepository;
+    @MockBean
+    private UserRepository userRepository;
     @Captor
     private ArgumentCaptor<Rate> rateArgumentCaptor;
     @Captor
@@ -34,9 +56,9 @@ class RateServiceTest {
 
     @Test
     public void whenNewRateThenWrite() {
-        when(repository.findTop1ByOrderByDateDesc()).thenReturn(Optional.empty());
+        when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.empty());
         rateService.newRate(new Rate().setAmount((float) 0.1356).setName("Каз тен").setDate(new Date()));
-        verify(repository).save(rateArgumentCaptor.capture());
+        verify(rateRepository).save(rateArgumentCaptor.capture());
         assertThat(rateArgumentCaptor.getAllValues().size()).isEqualTo(1);
         assertThat(rateArgumentCaptor.getValue().getAmount()).isEqualTo(0.1356F);
         assertThat(rateArgumentCaptor.getValue().getName()).isEqualTo("Каз тен");
@@ -44,7 +66,8 @@ class RateServiceTest {
 
     @Test
     public void whenNewRateThenWriteAndSendToKafka() {
-        when(repository.findTop1ByOrderByDateDesc()).thenReturn(Optional.empty());
+        when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.empty());
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(new User().setChatId(111L)));
         rateService.newRate(new Rate().setAmount(0.1356F).setName("Каз тен").setDate(new Date()));
         verify(kafkaService).sendMessage(anyString(), messageArgumentCaptor.capture());
         assertThat(messageArgumentCaptor.getValue().getMessage())
@@ -53,10 +76,11 @@ class RateServiceTest {
 
     @Test
     public void whenNewRateLowAndRateChangThenWriteAndSendToKafka() {
-        when(repository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.1345F)));
+        when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.1345F)));
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(new User().setChatId(111L)));
         rateService.newRate(new Rate().setAmount(0.1356F).setName("Каз тен").setDate(new Date()));
         verify(kafkaService).sendMessage(anyString(), messageArgumentCaptor.capture());
-        verify(repository).save(rateArgumentCaptor.capture());
+        verify(rateRepository).save(rateArgumentCaptor.capture());
         assertThat(rateArgumentCaptor.getAllValues().size()).isEqualTo(1);
         assertThat(rateArgumentCaptor.getValue().getAmount()).isEqualTo(0.1356F);
         assertThat(rateArgumentCaptor.getValue().getName()).isEqualTo("Каз тен");
@@ -66,10 +90,11 @@ class RateServiceTest {
 
     @Test
     public void whenNewRateHiAndRateChangThenWriteAndSendToKafka() {
-        when(repository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.1365F)));
+        when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.1365F)));
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(new User().setChatId(111L)));
         rateService.newRate(new Rate().setAmount(0.1356F).setName("Каз тен").setDate(new Date()));
         verify(kafkaService).sendMessage(anyString(), messageArgumentCaptor.capture());
-        verify(repository).save(rateArgumentCaptor.capture());
+        verify(rateRepository).save(rateArgumentCaptor.capture());
         assertThat(rateArgumentCaptor.getAllValues().size()).isEqualTo(1);
         assertThat(rateArgumentCaptor.getValue().getAmount()).isEqualTo(0.1356F);
         assertThat(rateArgumentCaptor.getValue().getName()).isEqualTo("Каз тен");
@@ -79,7 +104,7 @@ class RateServiceTest {
 
     @Test
     public void whenCalculateThenReturnMessage() {
-        when(repository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.1365F)));
+        when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.1365F)));
         String result = rateService.calculateRate("123456", "1000");
         verify(kafkaService).sendMessage(anyString(), messageArgumentCaptor.capture());
         assertThat(messageArgumentCaptor.getValue().getChatId()).isEqualTo(123456L);

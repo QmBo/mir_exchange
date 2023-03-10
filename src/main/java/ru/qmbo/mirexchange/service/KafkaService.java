@@ -14,14 +14,18 @@ import ru.qmbo.mirexchange.dto.Message;
  */
 @Service
 public class KafkaService {
+
+    private final String topic;
     private final KafkaTemplate<Integer, Message> template;
 
     /**
      * Instantiates a new Kafka service.
      *
+     * @param topic kafka topic
      * @param template the template
      */
-    public KafkaService(KafkaTemplate<Integer, Message> template) {
+    public KafkaService(@Value("${kafka.topic}")String topic, KafkaTemplate<Integer, Message> template) {
+        this.topic = topic;
         this.template = template;
     }
 
@@ -31,7 +35,7 @@ public class KafkaService {
      * @param topic   the topic
      * @param message the message
      */
-    public void sendMessage(String topic, Message message) {
+    public void sendMessage(Message message) {
         this.template.send(topic, message);
     }
 }

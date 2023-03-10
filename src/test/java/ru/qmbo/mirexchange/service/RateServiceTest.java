@@ -69,7 +69,7 @@ class RateServiceTest {
         when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.empty());
         when(userRepository.findAll()).thenReturn(Collections.singletonList(new User().setChatId(111L)));
         rateService.newRate(new Rate().setAmount(0.1356F).setName("Каз тен").setDate(new Date()));
-        verify(kafkaService).sendMessage(anyString(), messageArgumentCaptor.capture());
+        verify(kafkaService).sendMessage(messageArgumentCaptor.capture());
         assertThat(messageArgumentCaptor.getValue().getMessage())
                 .isEqualTo("Курс на сегодня: 7,3746\nСтатистики курса нет, так как нет более ранней информации о курсе.\n1000 тен. = 136 руб.\n2000 тен. = 271 руб.\n3000 тен. = 407 руб.\n4000 тен. = 542 руб.\n5000 тен. = 678 руб.\n6000 тен. = 814 руб.\n7000 тен. = 949 руб.\n8000 тен. = 1085 руб.\n9000 тен. = 1220 руб.");
     }
@@ -79,7 +79,7 @@ class RateServiceTest {
         when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.1345F)));
         when(userRepository.findAll()).thenReturn(Collections.singletonList(new User().setChatId(111L)));
         rateService.newRate(new Rate().setAmount(0.1356F).setName("Каз тен").setDate(new Date()));
-        verify(kafkaService).sendMessage(anyString(), messageArgumentCaptor.capture());
+        verify(kafkaService).sendMessage(messageArgumentCaptor.capture());
         verify(rateRepository).save(rateArgumentCaptor.capture());
         assertThat(rateArgumentCaptor.getAllValues().size()).isEqualTo(1);
         assertThat(rateArgumentCaptor.getValue().getAmount()).isEqualTo(0.1356F);
@@ -93,7 +93,7 @@ class RateServiceTest {
         when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.1365F)));
         when(userRepository.findAll()).thenReturn(Collections.singletonList(new User().setChatId(111L)));
         rateService.newRate(new Rate().setAmount(0.1356F).setName("Каз тен").setDate(new Date()));
-        verify(kafkaService).sendMessage(anyString(), messageArgumentCaptor.capture());
+        verify(kafkaService).sendMessage(messageArgumentCaptor.capture());
         verify(rateRepository).save(rateArgumentCaptor.capture());
         assertThat(rateArgumentCaptor.getAllValues().size()).isEqualTo(1);
         assertThat(rateArgumentCaptor.getValue().getAmount()).isEqualTo(0.1356F);
@@ -106,7 +106,7 @@ class RateServiceTest {
     public void whenCalculateThenReturnMessage() {
         when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.1365F)));
         String result = rateService.calculateRate("123456", "1000");
-        verify(kafkaService).sendMessage(anyString(), messageArgumentCaptor.capture());
+        verify(kafkaService).sendMessage(messageArgumentCaptor.capture());
         assertThat(messageArgumentCaptor.getValue().getChatId()).isEqualTo(123456L);
         assertThat(result).isEqualTo("Сегодня 1 000 тен. = 136,50 руб.");
     }

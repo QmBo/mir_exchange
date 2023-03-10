@@ -1,7 +1,6 @@
 package ru.qmbo.mirexchange.service;
 
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ru.qmbo.mirexchange.dto.Message;
 import ru.qmbo.mirexchange.model.Rate;
@@ -22,7 +21,7 @@ import static java.lang.String.format;
 @Service
 @Log4j2
 public class RateService {
-    private final String topic;
+
     private final RateRepository repository;
     private final KafkaService kafkaService;
     private final UserService userService;
@@ -30,14 +29,11 @@ public class RateService {
     /**
      * Instantiates a new Rate service.
      *
-     * @param topic        the topic
      * @param repository   the repository
      * @param kafkaService the kafka service
      * @param userService  the user service
      */
-    public RateService(@Value("${kafka.topic}")String topic,
-                       RateRepository repository, KafkaService kafkaService, UserService userService) {
-        this.topic = topic;
+    public RateService(RateRepository repository, KafkaService kafkaService, UserService userService) {
         this.repository = repository;
         this.kafkaService = kafkaService;
         this.userService = userService;
@@ -76,7 +72,7 @@ public class RateService {
         log.info(message);
         String finalMessage = message;
         this.userService.findAllUsers().forEach(
-                user -> sendMessage(new Message().setMessage(finalMessage), user.getChatId())
+                user -> this.kafkaService.sendMessage(new Message().setMessage(finalMessage).setChatId(user.getChatId()))
         );
     }
 
@@ -94,27 +90,22 @@ public class RateService {
         log.info(message);
         String finalMessage = message;
         this.userService.findAllUsers().forEach(
-                user -> sendMessage(new Message().setMessage(finalMessage), user.getChatId())
+                user -> this.kafkaService.sendMessage(new Message().setMessage(finalMessage).setChatId(user.getChatId()))
         );
     }
 
-    private void sendMessage(Message setMessage, Long user) {
-        this.kafkaService.sendMessage(
-                this.topic, setMessage.setChatId(user));
-    }
-
     private String addUsuallyToMessage(String message, double rubRate) {
-    return new StringBuilder().append(message)
-        .append("\n1000 тен. = ").append(format("%.0f руб.", 1000 / rubRate))
-        .append("\n2000 тен. = ").append(format("%.0f руб.", 2000 / rubRate))
-        .append("\n3000 тен. = ").append(format("%.0f руб.", 3000 / rubRate))
-        .append("\n4000 тен. = ").append(format("%.0f руб.", 4000 / rubRate))
-        .append("\n5000 тен. = ").append(format("%.0f руб.", 5000 / rubRate))
-        .append("\n6000 тен. = ").append(format("%.0f руб.", 6000 / rubRate))
-        .append("\n7000 тен. = ").append(format("%.0f руб.", 7000 / rubRate))
-        .append("\n8000 тен. = ").append(format("%.0f руб.", 8000 / rubRate))
-        .append("\n9000 тен. = ").append(format("%.0f руб.", 9000 / rubRate))
-        .toString();
+        return new StringBuilder().append(message)
+                .append("\n1000 тен. = ").append(format("%.0f руб.", 1000 / rubRate))
+                .append("\n2000 тен. = ").append(format("%.0f руб.", 2000 / rubRate))
+                .append("\n3000 тен. = ").append(format("%.0f руб.", 3000 / rubRate))
+                .append("\n4000 тен. = ").append(format("%.0f руб.", 4000 / rubRate))
+                .append("\n5000 тен. = ").append(format("%.0f руб.", 5000 / rubRate))
+                .append("\n6000 тен. = ").append(format("%.0f руб.", 6000 / rubRate))
+                .append("\n7000 тен. = ").append(format("%.0f руб.", 7000 / rubRate))
+                .append("\n8000 тен. = ").append(format("%.0f руб.", 8000 / rubRate))
+                .append("\n9000 тен. = ").append(format("%.0f руб.", 9000 / rubRate))
+                .toString();
     }
 
     /**
@@ -142,18 +133,18 @@ public class RateService {
             int parseAmount = Integer.parseInt(amount);
             long parseChatId = Long.parseLong(chatId);
             this.repository.findTop1ByOrderByDateDesc()
-                .ifPresent(
-                        rate -> result[0] = this.sendCalculateMessage(parseChatId, parseAmount, parseAmount * rate.getAmount()))
+                    .ifPresent(
+                            rate -> result[0] = this.sendCalculateMessage(parseChatId, parseAmount, parseAmount * rate.getAmount()))
             ;
         } catch (Exception e) {
             log.warn("Parse input value error: {}", e.getMessage());
         }
         return result[0];
-	}
+    }
 
     private String sendCalculateMessage(long chatId, int requestInt, float calculateRate) {
         String message = format("Сегодня %,d тен. = %,.2f руб.", requestInt, calculateRate);
-        this.kafkaService.sendMessage(this.topic, new Message().setMessage(message).setChatId(chatId));
+        this.kafkaService.sendMessage(new Message().setMessage(message).setChatId(chatId));
         return message;
     }
 

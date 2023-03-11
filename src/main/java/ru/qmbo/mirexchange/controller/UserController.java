@@ -19,12 +19,12 @@ public class UserController {
     @GetMapping("/add")
     @ResponseBody
     public String addUser(@RequestParam String chatId) {
-        return this.userService.addUser(chatId);
+        return this.userService.subscribe(chatId);
     }
 
     @GetMapping("/dell")
     @ResponseBody
     public String dellUser(@RequestParam String chatId) {
-        return this.userService.dellUser(chatId);
+        return this.userService.unsubscribe(chatId);
     }
 }

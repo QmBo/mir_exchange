@@ -7,7 +7,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: password
     volumes:
-      - /var/lib/docker/containers/mc1/db/data:/data/db
+      - /var/lib/docker/containers/mir_exchange/db/data:/data/db
     ports:
       - "27017:27017"
     restart: always

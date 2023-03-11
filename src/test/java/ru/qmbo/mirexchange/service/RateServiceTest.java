@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static ru.qmbo.mirexchange.service.UserService.TENGE;
 
 @SpringBootTest
 @Testcontainers
@@ -67,7 +68,7 @@ class RateServiceTest {
     @Test
     public void whenNewRateThenWriteAndSendToKafka() {
         when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.empty());
-        when(userRepository.findAll()).thenReturn(Collections.singletonList(new User().setChatId(111L)));
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(new User().setChatId(111L).setSubscribe(TENGE)));
         rateService.newRate(new Rate().setAmount(0.1356F).setName("Каз тен").setDate(new Date()));
         verify(kafkaService).sendMessage(messageArgumentCaptor.capture());
         assertThat(messageArgumentCaptor.getValue().getMessage())
@@ -77,7 +78,7 @@ class RateServiceTest {
     @Test
     public void whenNewRateLowAndRateChangThenWriteAndSendToKafka() {
         when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.1345F)));
-        when(userRepository.findAll()).thenReturn(Collections.singletonList(new User().setChatId(111L)));
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(new User().setChatId(111L).setSubscribe(TENGE)));
         rateService.newRate(new Rate().setAmount(0.1356F).setName("Каз тен").setDate(new Date()));
         verify(kafkaService).sendMessage(messageArgumentCaptor.capture());
         verify(rateRepository).save(rateArgumentCaptor.capture());
@@ -91,7 +92,7 @@ class RateServiceTest {
     @Test
     public void whenNewRateHiAndRateChangThenWriteAndSendToKafka() {
         when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.1365F)));
-        when(userRepository.findAll()).thenReturn(Collections.singletonList(new User().setChatId(111L)));
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(new User().setChatId(111L).setSubscribe(TENGE)));
         rateService.newRate(new Rate().setAmount(0.1356F).setName("Каз тен").setDate(new Date()));
         verify(kafkaService).sendMessage(messageArgumentCaptor.capture());
         verify(rateRepository).save(rateArgumentCaptor.capture());

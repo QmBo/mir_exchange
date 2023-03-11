@@ -9,6 +9,7 @@ import ru.qmbo.mirexchange.repository.UserRepository;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -46,27 +47,36 @@ public class UserService {
      *
      * @return the list of users
      */
-    public List<User> findAllUsers() {
-        return this.repository.findAll();
+    public List<User> findAllSubscribeUsers() {
+        return this.repository.findAll()
+                .stream()
+                .filter(user -> user.getSubscribe() != null)
+                .collect(Collectors.toList());
     }
 
     /**
-     * Add user from HTTP.
+     * Add user to subscribe.
      *
      * @param chatId the chat id
      * @return result message
      */
-    public String addUser(String chatId) {
+    public String subscribe(String chatId) {
         AtomicReference<String> result = new AtomicReference<>(BAD_REQUEST);
         try {
             final long parseLong = Long.parseLong(chatId);
-            this.repository.findByChatId(parseLong).ifPresentOrElse(
+            this.repository.findById(parseLong).ifPresentOrElse(
                     user -> {
-                        result.set(format(USER_S_ALREADY_ADDED, chatId));
-                        kafkaService.sendMessage(new Message().setMessage(YOU_ARE_NOT_SUBSCRIBE).setChatId(parseLong));
+                        if (user.getSubscribe() != null) {
+                            result.set(format(USER_S_ALREADY_ADDED, chatId));
+                            kafkaService.sendMessage(new Message().setMessage(YOU_ARE_NOT_SUBSCRIBE).setChatId(parseLong));
+                        } else {
+                            log.info(NEW_USER_SUBSCRIBE_AT_TENGE);
+                            result.set(format(ADDED, this.repository.save(user.setSubscribe(TENGE))));
+                            kafkaService.sendMessage(new Message().setMessage(YOU_ARE_SUBSCRIBE).setChatId(parseLong));
+                        }
                     },
                     () -> {
-                        result.set(format(ADDED, this.saveUser(parseLong)));
+                        result.set(format(ADDED, this.subscribeUser(parseLong)));
                         kafkaService.sendMessage(new Message().setMessage(YOU_ARE_SUBSCRIBE).setChatId(parseLong));
                     }
             );
@@ -82,14 +92,19 @@ public class UserService {
      * @param chatId chat id of User
      * @return result message
      */
-    public String dellUser(String chatId) {
+    public String unsubscribe(String chatId) {
         AtomicReference<String> result = new AtomicReference<>(BAD_REQUEST);
         try {
             final long parseLong = Long.parseLong(chatId);
-            this.repository.findByChatId(parseLong).ifPresentOrElse(
+            this.repository.findById(parseLong).ifPresentOrElse(
                     user -> {
-                        result.set(format(S_DELETE, this.deleteUser(user)));
-                        kafkaService.sendMessage(new Message().setMessage(YOU_ARE_UNSUBSCRIBE).setChatId(parseLong));
+                        if (user.getSubscribe() != null) {
+                            result.set(format(S_DELETE, this.unsubscribeUser(user)));
+                            kafkaService.sendMessage(new Message().setMessage(YOU_ARE_UNSUBSCRIBE).setChatId(parseLong));
+                        } else {
+                            result.set(format(USER_S_NOT_FOUND, chatId));
+                            kafkaService.sendMessage(new Message().setMessage(YOU_ARE_NOT_UNSUBSCRIBE).setChatId(parseLong));
+                        }
                     },
                     () -> {
                         result.set(format(USER_S_NOT_FOUND, chatId));
@@ -102,16 +117,26 @@ public class UserService {
         return result.get();
     }
 
-    private String deleteUser(User user) {
+    private String unsubscribeUser(User user) {
         log.info(USER_UNSUBSCRIBE_AT_TENGE);
-        this.repository.delete(user);
+        this.repository.save(user.setSubscribe(null));
         return user.toString();
     }
 
-    private String saveUser(Long parseLong) {
+    private String subscribeUser(Long parseLong) {
         log.info(NEW_USER_SUBSCRIBE_AT_TENGE);
         final User user = new User().setChatId(parseLong).setName(HTTP).setSubscribe(TENGE);
         this.repository.save(user);
         return user.toString();
+    }
+
+    public void userCollect(long chatId) {
+        this.repository.findById(chatId).ifPresentOrElse(
+                user -> {},
+                () -> {
+                    this.repository.save(new User().setChatId(chatId));
+                    log.info("New user collected: {}", chatId);
+                }
+        );
     }
 }

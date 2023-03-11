@@ -10,6 +10,8 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -39,7 +41,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static ru.qmbo.mirexchange.service.UserService.TENGE;
 
 @SpringBootTest
 @Testcontainers
@@ -101,12 +105,16 @@ class UserControllerTest {
     @MockBean
     private UserRepository userRepository;
 
+    @Captor
+    public ArgumentCaptor<User> userCaptor;
+
     @Test
     public void whenSubscribeThenMessageToKafka() throws Exception {
-        when(userRepository.findByChatId(345678L)).thenReturn(Optional.empty());
+        when(userRepository.findById(345678L)).thenReturn(Optional.empty());
         mockMvc.perform(MockMvcRequestBuilders.get("/users/add?chatId=345678"))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isOk());
+        verify(userRepository).save(userCaptor.capture());
         consumer.subscribe(Collections.singletonList(kafkaTopic));
         ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000L));
         consumer.close();
@@ -120,11 +128,13 @@ class UserControllerTest {
             }
         }
         assertThat(receive).isTrue();
+        assertThat(userCaptor.getValue().getSubscribe()).isEqualTo(TENGE);
+        assertThat(userCaptor.getValue().getChatId()).isEqualTo(345678L);
     }
 
     @Test
-    public void whenSubscribeAndAlreadyExistThenMessageToKafka() throws Exception {
-        when(userRepository.findByChatId(345678L)).thenReturn(Optional.of(new User().setChatId(345678L)));
+    public void whenSubscribeAndAlreadySubscribeThenMessageToKafka() throws Exception {
+        when(userRepository.findById(345678L)).thenReturn(Optional.of(new User().setChatId(345678L).setSubscribe(TENGE)));
         mockMvc.perform(MockMvcRequestBuilders.get("/users/add?chatId=345678"))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isOk());
@@ -144,12 +154,37 @@ class UserControllerTest {
     }
 
     @Test
+    public void whenSubscribeAndAlreadyExistButNotSubscribeThenMessageToKafka() throws Exception {
+        when(userRepository.findById(345678L)).thenReturn(Optional.of(new User().setChatId(345678L)));
+        mockMvc.perform(MockMvcRequestBuilders.get("/users/add?chatId=345678"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        verify(userRepository).save(userCaptor.capture());
+        consumer.subscribe(Collections.singletonList(kafkaTopic));
+        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000L));
+        consumer.close();
+        boolean receive = false;
+
+        for (ConsumerRecord<String, String> record : records) {
+            System.out.println("record.value() = " + record.value());
+            if (record.value().contains(UserService.YOU_ARE_SUBSCRIBE)) {
+                receive = true;
+                break;
+            }
+        }
+        assertThat(receive).isTrue();
+        assertThat(userCaptor.getValue().getSubscribe()).isEqualTo(TENGE);
+        assertThat(userCaptor.getValue().getChatId()).isEqualTo(345678L);
+    }
+
+    @Test
     public void whenUnsubscribeThenMessageToKafka() throws Exception {
-        when(userRepository.findByChatId(345678L)).thenReturn(Optional.of(new User().setChatId(345678L)));
+        when(userRepository.findById(345678L)).thenReturn(Optional.of(new User().setChatId(345678L).setSubscribe(TENGE)));
         mockMvc.perform(MockMvcRequestBuilders.get("/users/dell?chatId=345678"))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isOk());
         consumer.subscribe(Collections.singletonList(kafkaTopic));
+        verify(userRepository).save(userCaptor.capture());
         ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000L));
         consumer.close();
         boolean receive = false;
@@ -162,12 +197,35 @@ class UserControllerTest {
             }
         }
         assertThat(receive).isTrue();
+        assertThat(userCaptor.getValue().getSubscribe()).isNull();
+        assertThat(userCaptor.getValue().getChatId()).isEqualTo(345678L);
     }
 
 
     @Test
     public void whenUnsubscribeButNotFoundThenMessageToKafka() throws Exception {
-        when(userRepository.findByChatId(345678L)).thenReturn(Optional.empty());
+        when(userRepository.findById(345678L)).thenReturn(Optional.empty());
+        mockMvc.perform(MockMvcRequestBuilders.get("/users/dell?chatId=345678"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        consumer.subscribe(Collections.singletonList(kafkaTopic));
+        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000L));
+        consumer.close();
+        boolean receive = false;
+
+        for (ConsumerRecord<String, String> record : records) {
+            System.out.println("record.value() = " + record.value());
+            if (record.value().contains(UserService.YOU_ARE_NOT_UNSUBSCRIBE)) {
+                receive = true;
+                break;
+            }
+        }
+        assertThat(receive).isTrue();
+    }
+
+    @Test
+    public void whenUnsubscribeButNotSubscribeThenMessageToKafka() throws Exception {
+        when(userRepository.findById(345678L)).thenReturn(Optional.of(new User().setChatId(345678L)));
         mockMvc.perform(MockMvcRequestBuilders.get("/users/dell?chatId=345678"))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isOk());

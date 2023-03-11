@@ -71,7 +71,7 @@ public class RateService {
         message = this.addUsuallyToMessage(message, rub);
         log.info(message);
         String finalMessage = message;
-        this.userService.findAllUsers().forEach(
+        this.userService.findAllSubscribeUsers().forEach(
                 user -> this.kafkaService.sendMessage(new Message().setMessage(finalMessage).setChatId(user.getChatId()))
         );
     }
@@ -89,7 +89,7 @@ public class RateService {
         message = this.addUsuallyToMessage(message, rubRate);
         log.info(message);
         String finalMessage = message;
-        this.userService.findAllUsers().forEach(
+        this.userService.findAllSubscribeUsers().forEach(
                 user -> this.kafkaService.sendMessage(new Message().setMessage(finalMessage).setChatId(user.getChatId()))
         );
     }
@@ -136,6 +136,7 @@ public class RateService {
                     .ifPresent(
                             rate -> result[0] = this.sendCalculateMessage(parseChatId, parseAmount, parseAmount * rate.getAmount()))
             ;
+            this.userService.userCollect(parseChatId);
         } catch (Exception e) {
             log.warn("Parse input value error: {}", e.getMessage());
         }

@@ -23,7 +23,6 @@ import java.util.Date;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static ru.qmbo.mirexchange.service.UserService.TENGE;
@@ -106,7 +105,7 @@ class RateServiceTest {
     @Test
     public void whenCalculateThenReturnMessage() {
         when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.1365F)));
-        String result = rateService.calculateRate("123456", "1000");
+        String result = rateService.calculateRate("123456", "1000", TENGE);
         verify(kafkaService).sendMessage(messageArgumentCaptor.capture());
         assertThat(messageArgumentCaptor.getValue().getChatId()).isEqualTo(123456L);
         assertThat(result).isEqualTo("Сегодня 1 000 тен. = 136,50 руб.");

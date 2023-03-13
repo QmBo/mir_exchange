@@ -6,6 +6,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import ru.qmbo.mirexchange.service.RateService;
 
+import static ru.qmbo.mirexchange.service.UserService.RUB;
+import static ru.qmbo.mirexchange.service.UserService.TENGE;
+
 /**
  * RateController
  *
@@ -15,6 +18,7 @@ import ru.qmbo.mirexchange.service.RateService;
  */
 @Controller
 public class RateController {
+    public static final String WRONG_INPUT_VALUE_PARAMETER = "Wrong inputValue parameter: %s\n Use only tente or rub parameter";
     private final RateService rateService;
 
     /**
@@ -39,8 +43,14 @@ public class RateController {
 
     @GetMapping("/calc")
     @ResponseBody
-    public String calculateRate(@RequestParam String amount, @RequestParam String chatId) {
-        return this.rateService.calculateRate(chatId, amount);
+    public String calculateRate(@RequestParam String amount, @RequestParam String chatId,
+                                @RequestParam(required = false) String currency) {
+        if (currency == null || currency.isEmpty()) {
+            currency = TENGE;
+        } else if (!(TENGE.equalsIgnoreCase(currency) || RUB.equalsIgnoreCase(currency))) {
+            return String.format(WRONG_INPUT_VALUE_PARAMETER, currency);
+        }
+        return this.rateService.calculateRate(chatId, amount, currency);
     }
 
     @GetMapping("/resend")

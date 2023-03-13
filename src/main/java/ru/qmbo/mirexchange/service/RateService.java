@@ -10,6 +10,8 @@ import java.util.Optional;
 
 import static java.lang.Math.abs;
 import static java.lang.String.format;
+import static ru.qmbo.mirexchange.service.UserService.RUB;
+import static ru.qmbo.mirexchange.service.UserService.TENGE;
 
 /**
  * RateService
@@ -123,18 +125,21 @@ public class RateService {
     /**
      * Calculate exchange rate.
      *
-     * @param chatId the chat id
-     * @param amount the amount
+     * @param chatId   the chat id
+     * @param amount   the amount
+     * @param currency input currency Tenge or Rub
      * @return the string
      */
-    public String calculateRate(String chatId, String amount) {
+    public String calculateRate(String chatId, String amount, String currency) {
         String[] result = {"Wrong Parameters"};
         try {
             int parseAmount = Integer.parseInt(amount);
             long parseChatId = Long.parseLong(chatId);
             this.repository.findTop1ByOrderByDateDesc()
                     .ifPresent(
-                            rate -> result[0] = this.sendCalculateMessage(parseChatId, parseAmount, parseAmount * rate.getAmount()))
+                            rate -> result[0] = this.sendCalculateMessage(parseChatId, parseAmount,
+                                    rate.getAmount(), currency)
+                    )
             ;
             this.userService.userCollect(parseChatId);
         } catch (Exception e) {
@@ -143,8 +148,24 @@ public class RateService {
         return result[0];
     }
 
-    private String sendCalculateMessage(long chatId, int requestInt, float calculateRate) {
+    private String sendCalculateMessage(long chatId, int amount, float rate, String inputValue) {
+        String result = "";
+        if (TENGE.equalsIgnoreCase(inputValue)) {
+            result = sendCalculateMessageInputTenge(chatId, amount, amount * rate);
+        } else if (RUB.equalsIgnoreCase(inputValue)) {
+            result = sendCalculateMessageInputRub(chatId, amount, amount / rate);
+        }
+        return result;
+    }
+
+    private String sendCalculateMessageInputTenge(long chatId, int requestInt, float calculateRate) {
         String message = format("Сегодня %,d тен. = %,.2f руб.", requestInt, calculateRate);
+        this.kafkaService.sendMessage(new Message().setMessage(message).setChatId(chatId));
+        return message;
+    }
+
+    private String sendCalculateMessageInputRub(long chatId, int requestInt, float calculateRate) {
+        String message = format("Сегодня %,d руб. = %,.2f тен.", requestInt, calculateRate);
         this.kafkaService.sendMessage(new Message().setMessage(message).setChatId(chatId));
         return message;
     }

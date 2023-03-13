@@ -31,6 +31,7 @@ public class UserService {
     public static final String BAD_REQUEST = "Bad Request!";
     public static final String BAD_CHAT_ID = "Bad chat Id: {}";
     public static final String TENGE = "tenge";
+    public static final String RUB = "rub";
     public static final String HTTP = "http";
     public static final String NEW_USER_SUBSCRIBE_AT_TENGE = "New user subscribe at tenge =)";
     public static final String USER_UNSUBSCRIBE_AT_TENGE = "User unsubscribe at tenge =(";

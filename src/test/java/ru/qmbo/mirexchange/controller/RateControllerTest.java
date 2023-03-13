@@ -17,6 +17,8 @@ import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -29,13 +31,12 @@ import ru.qmbo.mirexchange.model.Rate;
 import ru.qmbo.mirexchange.repository.RateRepository;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static ru.qmbo.mirexchange.controller.RateController.WRONG_INPUT_VALUE_PARAMETER;
 
 @SpringBootTest
 @Testcontainers
@@ -106,13 +107,37 @@ public class RateControllerTest {
         consumer.subscribe(Collections.singletonList(kafkaTopic));
         ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000L));
         consumer.close();
-        boolean receive = false;
-        for (ConsumerRecord<String, String> record : records) {
-            if (record.value().contains("Сегодня 10 000 000 тен. = 1 345 600,00 руб.")) {
-                receive = true;
-                break;
-            }
-        }
-        assertThat(receive).isTrue();
+
+        List<ConsumerRecord<String, String>> result = new ArrayList<>(100);
+        records.forEach(result::add);
+        List<String> messages = result.stream().map(ConsumerRecord::value).collect(Collectors.toList());
+
+        assertThat(messages).contains("{\"chatId\":345678,\"message\":\"Сегодня 10 000 000 тен. = 1 345 600,00 руб.\"}");
+    }
+
+    @Test
+    public void whenCalculateRateWithWrongParameterThenWrongParameterAnswer() throws Exception {
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/calc?amount=10000000&chatId=345678&currency=Rur"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+        assertThat(result.getResponse().getContentAsString()).isEqualTo(String.format(WRONG_INPUT_VALUE_PARAMETER, "Rur"));
+    }
+
+    @Test
+    public void whenCalculateRateWithRubThenMessageToKafka() throws Exception {
+        when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.13456F)));
+        mockMvc.perform(MockMvcRequestBuilders.get("/calc?amount=10000&chatId=345678&currency=Rub"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        consumer.subscribe(Collections.singletonList(kafkaTopic));
+        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000L));
+        consumer.close();
+
+        List<ConsumerRecord<String, String>> result = new ArrayList<>(100);
+        records.forEach(result::add);
+        List<String> messages = result.stream().map(ConsumerRecord::value).collect(Collectors.toList());
+
+        assertThat(messages).contains("{\"chatId\":345678,\"message\":\"Сегодня 10 000 руб. = 74 316,29 тен.\"}");
     }
 }

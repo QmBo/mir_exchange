@@ -35,14 +35,13 @@ import ru.qmbo.mirexchange.repository.UserRepository;
 import ru.qmbo.mirexchange.service.UserService;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static ru.qmbo.mirexchange.service.UserService.RUB;
 import static ru.qmbo.mirexchange.service.UserService.TENGE;
 
 @SpringBootTest
@@ -242,5 +241,44 @@ class UserControllerTest {
             }
         }
         assertThat(receive).isTrue();
+    }
+
+    @Test
+    public void whenStatisticRequestThenMessageToKafka() throws Exception {
+        when(userRepository.findAll())
+                .thenReturn(Arrays.asList(new User().setSubscribe(TENGE), new User().setSubscribe(RUB), new User()));
+        mockMvc.perform(MockMvcRequestBuilders.get("/users/stats"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        consumer.subscribe(Collections.singletonList(kafkaTopic));
+        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000L));
+        consumer.close();
+
+        List<ConsumerRecord<String, String>> result = new ArrayList<>(100);
+        records.forEach(result::add);
+        List<String> messages = result.stream().map(ConsumerRecord::value).collect(Collectors.toList());
+
+        assertThat(messages)
+                .contains("{\"chatId\":303775921,\"message\":\"Всего зарегистрировано пользователей: 3\\nИз них подписаны: 2\"}");
+    }
+
+
+    @Test
+    public void whenStatisticRequestAndUsersNotFoundThenMessageToKafka() throws Exception {
+        when(userRepository.findAll())
+                .thenReturn(Collections.emptyList());
+        mockMvc.perform(MockMvcRequestBuilders.get("/users/stats"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        consumer.subscribe(Collections.singletonList(kafkaTopic));
+        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000L));
+        consumer.close();
+
+        List<ConsumerRecord<String, String>> result = new ArrayList<>(100);
+        records.forEach(result::add);
+        List<String> messages = result.stream().map(ConsumerRecord::value).collect(Collectors.toList());
+
+        assertThat(messages)
+                .contains("{\"chatId\":303775921,\"message\":\"В системе нет пользователей \\uD83E\\uDEE5\"}");
     }
 }

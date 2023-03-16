@@ -15,16 +15,20 @@ import ru.qmbo.mirexchange.dto.Message;
 @Service
 public class KafkaService {
 
+    private final String adminChatId;
     private final String topic;
     private final KafkaTemplate<Integer, Message> template;
 
     /**
      * Instantiates a new Kafka service.
      *
-     * @param topic kafka topic
-     * @param template the template
+     * @param adminChatId the admin chat id
+     * @param topic       kafka topic
+     * @param template    the template
      */
-    public KafkaService(@Value("${kafka.topic}")String topic, KafkaTemplate<Integer, Message> template) {
+    public KafkaService(@Value("${telegram.chat-id}") String adminChatId, @Value("${kafka.topic}")String topic,
+                        KafkaTemplate<Integer, Message> template) {
+        this.adminChatId = adminChatId;
         this.topic = topic;
         this.template = template;
     }
@@ -32,10 +36,18 @@ public class KafkaService {
     /**
      * Send message.
      *
-     * @param topic   the topic
      * @param message the message
      */
     public void sendMessage(Message message) {
         this.template.send(topic, message);
+    }
+
+    /**
+     * Send message to admin.
+     *
+     * @param message the message
+     */
+    public void sendMessageToAdmin(Message message) {
+        this.sendMessage(message.setChatId(Long.parseLong(this.adminChatId)));
     }
 }

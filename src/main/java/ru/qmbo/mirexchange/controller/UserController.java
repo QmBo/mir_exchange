@@ -27,4 +27,11 @@ public class UserController {
     public String dellUser(@RequestParam String chatId) {
         return this.userService.unsubscribe(chatId);
     }
+
+    @GetMapping("/stats")
+    @ResponseBody
+    public String getStatistic() {
+        return this.userService.getStatistic();
+    }
+
 }

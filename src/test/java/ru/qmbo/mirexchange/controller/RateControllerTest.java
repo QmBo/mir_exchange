@@ -18,7 +18,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -139,5 +138,22 @@ public class RateControllerTest {
         List<String> messages = result.stream().map(ConsumerRecord::value).collect(Collectors.toList());
 
         assertThat(messages).contains("{\"chatId\":345678,\"message\":\"Сегодня 10 000 руб. = 74 316,29 тен.\"}");
+    }
+
+    @Test
+    public void whenCalculateRateWithRub2ThenMessageToKafka() throws Exception {
+        when(rateRepository.findTop1ByOrderByDateDesc()).thenReturn(Optional.of(new Rate().setAmount(0.13456F)));
+        mockMvc.perform(MockMvcRequestBuilders.get("/calc?chatId=303775921&amount=100&currency=rub"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        consumer.subscribe(Collections.singletonList(kafkaTopic));
+        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000L));
+        consumer.close();
+
+        List<ConsumerRecord<String, String>> result = new ArrayList<>(100);
+        records.forEach(result::add);
+        List<String> messages = result.stream().map(ConsumerRecord::value).collect(Collectors.toList());
+
+        assertThat(messages).contains("{\"chatId\":303775921,\"message\":\"Сегодня 100 руб. = 743,16 тен.\"}");
     }
 }

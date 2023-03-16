@@ -8,6 +8,7 @@ import ru.qmbo.mirexchange.model.User;
 import ru.qmbo.mirexchange.repository.UserRepository;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -39,6 +40,8 @@ public class UserService {
     public static final String USER_S_NOT_FOUND = "User %s not found!";
     public static final String YOU_ARE_UNSUBSCRIBE = "Вы отписались от рассылки!";
     public static final String YOU_ARE_NOT_UNSUBSCRIBE = "Вы не были подписаны на рассылку!";
+    public static final String STATISTIC = "Всего зарегистрировано пользователей: %s\nИз них подписаны: %s";
+    public static final String USERS_NOT_FOUND = "В системе нет пользователей \uD83E\uDEE5";
     private final UserRepository repository;
 
     private final KafkaService kafkaService;
@@ -131,13 +134,39 @@ public class UserService {
         return user.toString();
     }
 
+    /**
+     * User collect.
+     *
+     * @param chatId the chat id
+     */
     public void userCollect(long chatId) {
         this.repository.findById(chatId).ifPresentOrElse(
-                user -> {},
+                user -> {
+                },
                 () -> {
                     this.repository.save(new User().setChatId(chatId));
                     log.info("New user collected: {}", chatId);
                 }
         );
+    }
+
+    /**
+     * Gets all Users.
+     *
+     * @return the all
+     */
+    public String getStatistic() {
+        String result = USERS_NOT_FOUND;
+        final List<User> users = this.repository.findAll();
+        if (!users.isEmpty()) {
+            final long subscribers = users
+                    .stream()
+                    .map(User::getSubscribe)
+                    .filter(Objects::nonNull)
+                    .count();
+            result = format(STATISTIC, users.size(), subscribers);
+        }
+        this.kafkaService.sendMessageToAdmin(new Message().setMessage(result));
+        return result;
     }
 }

@@ -141,7 +141,6 @@ public class RateService {
                                     rate.getAmount(), currency)
                     )
             ;
-            this.userService.userCollect(parseChatId);
         } catch (Exception e) {
             log.warn("Parse input value error: {}", e.getMessage());
         }

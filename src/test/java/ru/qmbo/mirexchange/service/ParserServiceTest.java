@@ -6,13 +6,29 @@ import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.MongoDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 import ru.qmbo.mirexchange.model.Rate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
+@Testcontainers
 class ParserServiceTest {
+    @Container
+    public static MongoDBContainer mongoDB = new MongoDBContainer(
+            DockerImageName.parse("mongo:4.0.10"));
+
+
+    @DynamicPropertySource
+    public static void properties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.mongodb.uri", mongoDB::getReplicaSetUrl);
+    }
     @Autowired
     private ParserService parserService;
     @MockBean

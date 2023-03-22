@@ -3,7 +3,6 @@ package ru.qmbo.mirexchange.repository;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import ru.qmbo.mirexchange.model.User;
 
-import java.util.Optional;
 
 /**
  * RateRepository

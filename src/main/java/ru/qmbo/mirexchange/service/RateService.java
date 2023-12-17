@@ -97,16 +97,18 @@ public class RateService {
     }
 
     private String addUsuallyToMessage(String message, double rubRate) {
+        //noinspection StringBufferReplaceableByString
         return new StringBuilder().append(message)
-                .append("\n1000 тен. = ").append(format("%.0f руб.", 1000 / rubRate))
-                .append("\n2000 тен. = ").append(format("%.0f руб.", 2000 / rubRate))
-                .append("\n3000 тен. = ").append(format("%.0f руб.", 3000 / rubRate))
-                .append("\n4000 тен. = ").append(format("%.0f руб.", 4000 / rubRate))
-                .append("\n5000 тен. = ").append(format("%.0f руб.", 5000 / rubRate))
-                .append("\n6000 тен. = ").append(format("%.0f руб.", 6000 / rubRate))
-                .append("\n7000 тен. = ").append(format("%.0f руб.", 7000 / rubRate))
-                .append("\n8000 тен. = ").append(format("%.0f руб.", 8000 / rubRate))
-                .append("\n9000 тен. = ").append(format("%.0f руб.", 9000 / rubRate))
+                .append("\n1 000 тен. = ").append(format("%.0f руб.", 1000 / rubRate))
+                .append("\n2 000 тен. = ").append(format("%.0f руб.", 2000 / rubRate))
+                .append("\n3 000 тен. = ").append(format("%.0f руб.", 3000 / rubRate))
+                .append("\n4 000 тен. = ").append(format("%.0f руб.", 4000 / rubRate))
+                .append("\n5 000 тен. = ").append(format("%.0f руб.", 5000 / rubRate))
+                .append("\n6 000 тен. = ").append(format("%.0f руб.", 6000 / rubRate))
+                .append("\n7 000 тен. = ").append(format("%.0f руб.", 7000 / rubRate))
+                .append("\n8 000 тен. = ").append(format("%.0f руб.", 8000 / rubRate))
+                .append("\n9 000 тен. = ").append(format("%.0f руб.", 9000 / rubRate))
+                .append("\n10 000 тен. = ").append(format("%.0f руб.", 10000 / rubRate))
                 .toString();
     }
 
@@ -158,13 +160,13 @@ public class RateService {
     }
 
     private String sendCalculateMessageInputTenge(long chatId, int requestInt, float calculateRate) {
-        String message = format("Сегодня %,d тен. = %,.2f руб.", requestInt, calculateRate);
+        String message = format("Сегодня по курсу НБК %,d тен. = %,.2f руб.", requestInt, calculateRate);
         this.kafkaService.sendMessage(new Message().setMessage(message).setChatId(chatId));
         return message;
     }
 
     private String sendCalculateMessageInputRub(long chatId, int requestInt, float calculateRate) {
-        String message = format("Сегодня %,d руб. = %,.2f тен.", requestInt, calculateRate);
+        String message = format("Сегодня по курсу НБК %,d руб. = %,.2f тен.", requestInt, calculateRate);
         this.kafkaService.sendMessage(new Message().setMessage(message).setChatId(chatId));
         return message;
     }

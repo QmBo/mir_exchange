@@ -50,6 +50,7 @@ public class RateControllerTest {
 
     private KafkaConsumer<String, String> consumer;
 
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private KafkaProducer<String, String> producer;
 
     @Container
@@ -111,7 +112,7 @@ public class RateControllerTest {
         records.forEach(result::add);
         List<String> messages = result.stream().map(ConsumerRecord::value).collect(Collectors.toList());
 
-        assertThat(messages).contains("{\"chatId\":345678,\"message\":\"Сегодня 10 000 000 тен. = 1 345 600,00 руб.\"}");
+        assertThat(messages).contains("{\"chatId\":345678,\"message\":\"Сегодня по курсу НБК 10 000 000 тен. = 1 345 600,00 руб.\"}");
     }
 
     @Test
@@ -137,7 +138,7 @@ public class RateControllerTest {
         records.forEach(result::add);
         List<String> messages = result.stream().map(ConsumerRecord::value).collect(Collectors.toList());
 
-        assertThat(messages).contains("{\"chatId\":345678,\"message\":\"Сегодня 10 000 руб. = 74 316,29 тен.\"}");
+        assertThat(messages).contains("{\"chatId\":345678,\"message\":\"Сегодня по курсу НБК 10 000 руб. = 74 316,29 тен.\"}");
     }
 
     @Test
@@ -154,6 +155,6 @@ public class RateControllerTest {
         records.forEach(result::add);
         List<String> messages = result.stream().map(ConsumerRecord::value).collect(Collectors.toList());
 
-        assertThat(messages).contains("{\"chatId\":303775921,\"message\":\"Сегодня 100 руб. = 743,16 тен.\"}");
+        assertThat(messages).contains("{\"chatId\":303775921,\"message\":\"Сегодня по курсу НБК 100 руб. = 743,16 тен.\"}");
     }
 }

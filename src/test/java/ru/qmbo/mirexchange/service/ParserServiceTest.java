@@ -24,7 +24,6 @@ class ParserServiceTest {
     public static MongoDBContainer mongoDB = new MongoDBContainer(
             DockerImageName.parse("mongo:4.0.10"));
 
-
     @DynamicPropertySource
     public static void properties(DynamicPropertyRegistry registry) {
         registry.add("spring.data.mongodb.uri", mongoDB::getReplicaSetUrl);

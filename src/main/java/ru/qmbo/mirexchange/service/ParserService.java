@@ -21,7 +21,7 @@ import static java.lang.String.format;
 /**
  * ParserService
  *
- * @author Victor Egorov (qrioflat@gmail.com).
+ * @author Victor Egorov.
  * @version 0.1
  * @since 08.12.2022
  */

@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * MirExchangeApplication
  *
- * @author Victor Egorov (qrioflat@gmail.com).
+ * @author Victor Egorov.
  * @version 0.1
  * @since 08.12.2022
  */

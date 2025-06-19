@@ -1,11 +1,13 @@
 package ru.qmbo.mirexchange.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import ru.qmbo.mirexchange.dto.Message;
 import ru.qmbo.mirexchange.model.Rate;
 import ru.qmbo.mirexchange.repository.RateRepository;
 
+import java.text.DecimalFormat;
 import java.util.Optional;
 
 import static java.lang.Math.abs;
@@ -16,30 +18,20 @@ import static ru.qmbo.mirexchange.service.UserService.TENGE;
 /**
  * RateService
  *
- * @author Victor Egorov (qrioflat@gmail.com).
- * @version 0.1
- * @since 08.12.2022
+ * @author Victor Egorov.
+ * @version 0.2
+ * @since 20.06.2025
  */
 @Service
 @Log4j2
+@RequiredArgsConstructor
 public class RateService {
 
+    private final DecimalFormat decimalFormat;
+    private final DecimalFormat decimalFormatFloat;
     private final RateRepository repository;
     private final KafkaService kafkaService;
     private final UserService userService;
-
-    /**
-     * Instantiates a new Rate service.
-     *
-     * @param repository   the repository
-     * @param kafkaService the kafka service
-     * @param userService  the user service
-     */
-    public RateService(RateRepository repository, KafkaService kafkaService, UserService userService) {
-        this.repository = repository;
-        this.kafkaService = kafkaService;
-        this.userService = userService;
-    }
 
     /**
      * New rate.
@@ -97,19 +89,16 @@ public class RateService {
     }
 
     private String addUsuallyToMessage(String message, double rubRate) {
-        //noinspection StringBufferReplaceableByString
-        return new StringBuilder().append(message)
-                .append("\n1 000 тен. = ").append(format("%.0f руб.", 1000 / rubRate))
-                .append("\n2 000 тен. = ").append(format("%.0f руб.", 2000 / rubRate))
-                .append("\n3 000 тен. = ").append(format("%.0f руб.", 3000 / rubRate))
-                .append("\n4 000 тен. = ").append(format("%.0f руб.", 4000 / rubRate))
-                .append("\n5 000 тен. = ").append(format("%.0f руб.", 5000 / rubRate))
-                .append("\n6 000 тен. = ").append(format("%.0f руб.", 6000 / rubRate))
-                .append("\n7 000 тен. = ").append(format("%.0f руб.", 7000 / rubRate))
-                .append("\n8 000 тен. = ").append(format("%.0f руб.", 8000 / rubRate))
-                .append("\n9 000 тен. = ").append(format("%.0f руб.", 9000 / rubRate))
-                .append("\n10 000 тен. = ").append(format("%.0f руб.", 10000 / rubRate))
-                .toString();
+        StringBuilder sb = new StringBuilder(message);
+
+        for (int i = 1; i <= 10; i++) {
+            int tenge = i * 1000;
+            String tengeStr = decimalFormat.format(tenge);
+            String rubStr = decimalFormat.format(tenge / rubRate);
+            sb.append(format(i > 9 ? "\n%s тен. = %s руб." : "\n %s тен. = %s руб.", tengeStr, rubStr));
+        }
+
+        return sb.toString();
     }
 
     /**
@@ -160,13 +149,15 @@ public class RateService {
     }
 
     private String sendCalculateMessageInputTenge(long chatId, int requestInt, float calculateRate) {
-        String message = format("Сегодня по курсу НБК %,d тен. = %,.2f руб.", requestInt, calculateRate);
+        String message = format("Сегодня по курсу НБК %s тен. = %s руб.",
+                decimalFormatFloat.format(requestInt), decimalFormatFloat.format(calculateRate));
         this.kafkaService.sendMessage(new Message().setMessage(message).setChatId(chatId));
         return message;
     }
 
     private String sendCalculateMessageInputRub(long chatId, int requestInt, float calculateRate) {
-        String message = format("Сегодня по курсу НБК %,d руб. = %,.2f тен.", requestInt, calculateRate);
+        String message = format("Сегодня по курсу НБК %s руб. = %s тен.",
+                decimalFormatFloat.format(requestInt), decimalFormatFloat.format(calculateRate));
         this.kafkaService.sendMessage(new Message().setMessage(message).setChatId(chatId));
         return message;
     }

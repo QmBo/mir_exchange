@@ -6,7 +6,7 @@ import lombok.experimental.Accessors;
 /**
  * Message
  *
- * @author Victor Egorov (qrioflat@gmail.com).
+ * @author Victor Egorov.
  * @version 0.1
  * @since 08.12.2022
  */

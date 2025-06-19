@@ -1,5 +1,5 @@
-FROM openjdk:11-jdk-oracle
+FROM openjdk:21-jdk-slim
 WORKDIR mir-exchange
-ADD target/mir-exchange.jar app.jar
+ADD target/mir-exchange.jar mirexchange.jar
 ENV TZ="Asia/Almaty"
-ENTRYPOINT java -jar app.jar
+ENTRYPOINT java -jar mirexchange.jar

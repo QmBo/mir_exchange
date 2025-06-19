@@ -10,7 +10,7 @@ import java.util.Date;
 /**
  * Rate
  *
- * @author Victor Egorov (qrioflat@gmail.com).
+ * @author Victor Egorov.
  * @version 0.1
  * @since 08.12.2022
  */

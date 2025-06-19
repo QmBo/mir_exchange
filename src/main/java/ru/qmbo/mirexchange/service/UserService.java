@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 /**
  * RateService
  *
- * @author Victor Egorov (qrioflat@gmail.com).
+ * @author Victor Egorov.
  * @version 0.1
  * @since 16.12.2022
  */

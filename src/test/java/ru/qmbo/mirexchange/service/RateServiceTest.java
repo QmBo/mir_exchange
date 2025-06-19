@@ -71,7 +71,7 @@ class RateServiceTest {
         rateService.newRate(new Rate().setAmount(0.1356F).setName("Каз тен").setDate(new Date()));
         verify(kafkaService).sendMessage(messageArgumentCaptor.capture());
         assertThat(messageArgumentCaptor.getValue().getMessage())
-                .isEqualTo("Курс на сегодня: 7,3746\nСтатистики курса нет, так как нет более ранней информации о курсе.\n1 000 тен. = 136 руб.\n2 000 тен. = 271 руб.\n3 000 тен. = 407 руб.\n4 000 тен. = 542 руб.\n5 000 тен. = 678 руб.\n6 000 тен. = 814 руб.\n7 000 тен. = 949 руб.\n8 000 тен. = 1085 руб.\n9 000 тен. = 1220 руб.\n10 000 тен. = 1356 руб.");
+                .isEqualTo("Курс на сегодня: 7,3746\nСтатистики курса нет, так как нет более ранней информации о курсе.\n 1 000 тен. = 136 руб.\n 2 000 тен. = 271 руб.\n 3 000 тен. = 407 руб.\n 4 000 тен. = 542 руб.\n 5 000 тен. = 678 руб.\n 6 000 тен. = 814 руб.\n 7 000 тен. = 949 руб.\n 8 000 тен. = 1 085 руб.\n 9 000 тен. = 1 220 руб.\n10 000 тен. = 1 356 руб.");
     }
 
     @Test
@@ -85,7 +85,7 @@ class RateServiceTest {
         assertThat(rateArgumentCaptor.getValue().getAmount()).isEqualTo(0.1356F);
         assertThat(rateArgumentCaptor.getValue().getName()).isEqualTo("Каз тен");
         assertThat(messageArgumentCaptor.getValue().getMessage())
-                .isEqualTo("Рубль дешевеет разница: 0,00110\nЗа рубль сейчас дают 7,3746 тенге.\n1 000 тен. = 136 руб.\n2 000 тен. = 271 руб.\n3 000 тен. = 407 руб.\n4 000 тен. = 542 руб.\n5 000 тен. = 678 руб.\n6 000 тен. = 814 руб.\n7 000 тен. = 949 руб.\n8 000 тен. = 1085 руб.\n9 000 тен. = 1220 руб.\n10 000 тен. = 1356 руб.");
+                .isEqualTo("Рубль дешевеет разница: 0,00110\nЗа рубль сейчас дают 7,3746 тенге.\n 1 000 тен. = 136 руб.\n 2 000 тен. = 271 руб.\n 3 000 тен. = 407 руб.\n 4 000 тен. = 542 руб.\n 5 000 тен. = 678 руб.\n 6 000 тен. = 814 руб.\n 7 000 тен. = 949 руб.\n 8 000 тен. = 1 085 руб.\n 9 000 тен. = 1 220 руб.\n10 000 тен. = 1 356 руб.");
     }
 
     @Test
@@ -99,7 +99,7 @@ class RateServiceTest {
         assertThat(rateArgumentCaptor.getValue().getAmount()).isEqualTo(0.1356F);
         assertThat(rateArgumentCaptor.getValue().getName()).isEqualTo("Каз тен");
         assertThat(messageArgumentCaptor.getValue().getMessage())
-                .isEqualTo("Рубль дорожает разница: 0,00090\nЗа рубль сейчас дают 7,3746 тенге.\n1 000 тен. = 136 руб.\n2 000 тен. = 271 руб.\n3 000 тен. = 407 руб.\n4 000 тен. = 542 руб.\n5 000 тен. = 678 руб.\n6 000 тен. = 814 руб.\n7 000 тен. = 949 руб.\n8 000 тен. = 1085 руб.\n9 000 тен. = 1220 руб.\n10 000 тен. = 1356 руб.");
+                .isEqualTo("Рубль дорожает разница: 0,00090\nЗа рубль сейчас дают 7,3746 тенге.\n 1 000 тен. = 136 руб.\n 2 000 тен. = 271 руб.\n 3 000 тен. = 407 руб.\n 4 000 тен. = 542 руб.\n 5 000 тен. = 678 руб.\n 6 000 тен. = 814 руб.\n 7 000 тен. = 949 руб.\n 8 000 тен. = 1 085 руб.\n 9 000 тен. = 1 220 руб.\n10 000 тен. = 1 356 руб.");
     }
 
     @Test
@@ -108,6 +108,6 @@ class RateServiceTest {
         String result = rateService.calculateRate("123456", "1000", TENGE);
         verify(kafkaService).sendMessage(messageArgumentCaptor.capture());
         assertThat(messageArgumentCaptor.getValue().getChatId()).isEqualTo(123456L);
-        assertThat(result).isEqualTo("Сегодня по курсу НБК 1 000 тен. = 136,50 руб.");
+        assertThat(result).isEqualTo("Сегодня по курсу НБК 1 000,00 тен. = 136,50 руб.");
     }
 }

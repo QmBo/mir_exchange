@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   db_mir_exchange:
     image: mongo:4.4.6
@@ -17,7 +16,7 @@ services:
 
 
   mir_exchange:
-    image: qmbo/mir_exchange:0.0.7_1
+    image: qmbo/mir_exchange:0.0.8_1
     container_name: mir_exchange
     environment:
       SPRING_KAFKA_BOOTSTRAP-SERVERS: telegram_messages_sender_broker:49150

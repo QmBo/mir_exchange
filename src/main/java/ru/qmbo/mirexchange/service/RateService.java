@@ -150,14 +150,14 @@ public class RateService {
 
     private String sendCalculateMessageInputTenge(long chatId, int requestInt, float calculateRate) {
         String message = format("Сегодня по курсу НБК %s тен. = %s руб.",
-                decimalFormatFloat.format(requestInt), decimalFormatFloat.format(calculateRate));
+                decimalFormat.format(requestInt), decimalFormatFloat.format(calculateRate));
         this.kafkaService.sendMessage(new Message().setMessage(message).setChatId(chatId));
         return message;
     }
 
     private String sendCalculateMessageInputRub(long chatId, int requestInt, float calculateRate) {
         String message = format("Сегодня по курсу НБК %s руб. = %s тен.",
-                decimalFormatFloat.format(requestInt), decimalFormatFloat.format(calculateRate));
+                decimalFormat.format(requestInt), decimalFormatFloat.format(calculateRate));
         this.kafkaService.sendMessage(new Message().setMessage(message).setChatId(chatId));
         return message;
     }
